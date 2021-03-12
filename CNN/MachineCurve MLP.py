@@ -6,14 +6,10 @@ from torch import nn
 
 import torch.nn.functional as F
 from torchvision.datasets import ImageFolder
-#from torch.utils.data import DataLoader
 from torchvision import transforms
 
-import timeit
-import copy
 import matplotlib.pyplot as plt
 import numpy as np
-#import numpy.plt as plt
 
 class MLP(nn.Module):
     '''
@@ -32,21 +28,6 @@ class MLP(nn.Module):
       self.conv2_drop = nn.Dropout2d(0.6)
       self.fc1 = nn.Linear(self.size, 32)
       self.fc2 = nn.Linear(32, 10)
-
-    
-    # self.layers = nn.Sequential(
-    #   nn.Flatten(), # Turn into a 1D Structure
-    #   nn.Linear(width * height * depth, 64), # Feed into a struct that takes the raw Image and spits out 64 values
-    #   nn.ReLU(), # Rectify
-    #   nn.Linear(64, 32), # Feed in again, down to 32 values
-    #   nn.ReLU(), # Rectify
-    #   nn.Linear(32, 10) # Feed in one last time, down to 10
-    # )
-
-
-  # def forward(self, x):
-  #   '''Forward pass'''
-  #   return self.layers(x)
 
     def forward(self, x):
         x = F.relu(F.max_pool2d(self.conv1(x), 2))
@@ -75,36 +56,32 @@ def _main_(device = ""):
     torch.manual_seed(random_seed)
     print("Seeded Torch")
     
-      # Prepare CIFAR-10 dataset
-    #dataset = CIFAR10(os.getcwd(), download=True, transform=transforms.ToTensor())
-    
     data_transforms = {
     'train' : transforms.Compose([
-        transforms.Resize(64),
-          transforms.CenterCrop(64),
-          transforms.Grayscale(),
-          transforms.ToTensor()
+        transforms.RandomRotation(15)
+        ,transforms.RandomAffine(15)
+        #,transforms.Resize(224)
+          ,transforms.CenterCrop(64)
+          ,transforms.ColorJitter(0.1, 0.1, 0.1)
+          ,transforms.Grayscale()
+          ,transforms.ToTensor()
+          #,transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
       ]),
     'test' : transforms.Compose([
-            transforms.Resize(64),
-          transforms.CenterCrop(64),
-          transforms.Grayscale(),
-          transforms.ToTensor()
+          #transforms.Resize(224)
+          transforms.CenterCrop(64)
+          ,transforms.Grayscale()
+          ,transforms.ToTensor()
+          #,transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
       ])
     
     }
     
     location = r"E:\Work\AI\Images"
-    #dataset = ImageFolder(location, transform = data_transform)
-    #trainloader = torch.utils.data.DataLoader(dataset, batch_size=10, shuffle=True, num_workers=1)
-    
-    
+
     image_datasets = {x: ImageFolder(os.path.join(location, x),
                                               data_transforms[x])
                       for x in ['train', 'test']}
-    #dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=4,
-    #                                              shuffle=True, num_workers=4)
-    #              for x in ['train', 'val']}
     
     train_loader = torch.utils.data.DataLoader(image_datasets['train'], batch_size=batch_size_train,
                                                   shuffle=True, num_workers=1)
@@ -112,52 +89,38 @@ def _main_(device = ""):
     test_loader = torch.utils.data.DataLoader(image_datasets['test'], batch_size=batch_size_test,
                                                   shuffle=True, num_workers=1)
     
-    dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'test']}
     class_names = image_datasets['train'].classes
     
     print("Loaded Dataset")
-    
-    mean = torch.zeros(1)
-    std = torch.zeros(1)
-    N_CHANNELS = 1
-    print('Computing mean and std...')
-    for inputs, _labels in train_loader:
-        for i in range(N_CHANNELS):
-            mean[i] += inputs[:,i,:,:].mean()
-            std[i] += inputs[:,i,:,:].std()
-    mean.div_(len(image_datasets['train']))
-    std.div_(len(image_datasets['train']))
-    print(mean, std)
-    print("Found Mean and STD")
     
     if device == "":
         # Work out if we can use the GPU
         device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     print(f"Running on {device}")
     
-    # Initialize the MLP
+    ## Transfer Learning Test
+    import torchvision.models as models
+    
+    model = models.resnet18(pretrained = True)
+    
+    num_features = model.fc.in_features
+    model.fc = nn.Linear(num_features, 6)
+    
+    # Original Model
     model = MLP()
     model.to(device)
     model.cuda()
     # Define the loss function and optimizer
-    #criterion = F.nll_los
-    #optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
     optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate,
                       momentum=momentum)
-    #scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.1)
-    
-    
-    
+
     # Data
     train_losses = []
     train_counter = []
     test_losses = []
-    #test_counter = [i*len(train_loader.dataset) for i in range(n_epochs + 1)]
-    x_prev = 0
     
     def train(epoch, device, model):
         model.train()  # Set model to training mode
-
         
         len_dataset= len(train_loader.dataset)
         # Iterate over the DataLoader for training data
@@ -250,21 +213,18 @@ def _main_(device = ""):
                         return
             model.train(mode=was_training)
     
+    #Starting Test. How good is the Model RAW
     test(device, model)
+    
     for epoch in range(1, n_epochs + 1):
         train(epoch, device, model)
         test(device, model)
-    #train_model(model, criterion, optimizer, scheduler)
-    visualize_model(model)
-    # for epoch in range(1,6):
-    #     print(f"Starting Epoch {epoch}")
-    #     epoch_func(device)
-        
-      
     print("Training Complete")
     
+    visualize_model(model)
+    ## Loss Graph
     plt.plot(train_losses)
-    plt.plot(test_losses)
+    plt.plot([x for x in range(0, 65, 4)], test_losses)
     print(train_losses)
     print(train_counter)
     print(test_losses)
