@@ -106,12 +106,13 @@ def _main_(device = ""):
     ## Transfer Learning Test
     import torchvision.models as models
     
+    ## Other Models
     #model = models.resnet18(pretrained = True)
     #model = models.googlenet(pretrained= True)
-    #model = models.vgg16(pretrained = True)
     
     #num_features = model.fc.in_features
     #model.fc = nn.Linear(num_features, 6)
+
     
     # Original Model
     model = MLP()
@@ -262,60 +263,8 @@ def _main_(device = ""):
     plt.plot([x for x in range(1, n_epochs + 1)], test_losses_once, label="Testing")
     plt.legend()
     
-    
-    print(train_losses)
-    print(train_counter)
-    print(test_losses)
-    
-    
-def drawCAM():
-    
-    model = models.resnet18(pretrained = True)
-    model.eval()
-    
-    image = Image.open('Images/test/w/w.png')
-    
-    imshow(image)
-    
-    
-    
-    # preprocessing. mean and std from ImageNet
-    normalize = transforms.Normalize(
-       mean=[0.485, 0.456, 0.406],
-       std=[0.229, 0.224, 0.225]
-    )
-    
-    preprocess = transforms.Compose([
-        transforms.ToTensor(),
-        normalize
-    ])
-    
-    # convert image to tensor
-    tensor = preprocess(image)
-    
-    # reshape 4D tensor (N, C, H, W)
-    tensor = tensor.unsqueeze(0)
-    
-    
-    target_layer = model.layer4[1].conv2
-    wrapped_model = cam.SmoothGradCAMpp(model, target_layer, n_samples=25, stdev_spread=0.15)
-    hihi, idx = wrapped_model(tensor)
-    plt.imshow(hihi.squeeze().numpy(), alpha=0.5, cmap='jet')
-    
-    #img = reverse_normalize(tensor)
-    #heatmap = visualize(img, cam)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+ 
     
 if __name__ == '__main__':
-    #drawCAM()
     _main_()
      
