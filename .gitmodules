@@ -1,6 +1,3 @@
-[submodule "SmoothCAM"]
-	path = GradCAM
-	url = https://github.com/yiskw713/SmoothGradCAMplusplus
 [submodule "SmoothGradCAMplusplus"]
 	path = SmoothGradCAMplusplus
 	url = https://github.com/yiskw713/SmoothGradCAMplusplus
