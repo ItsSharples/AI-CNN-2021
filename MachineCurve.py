@@ -316,6 +316,6 @@ def drawCAM():
     
     
 if __name__ == '__main__':
-    drawCAM()
-    #_main_()
+    #drawCAM()
+    _main_()
      
