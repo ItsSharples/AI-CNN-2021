@@ -1,4 +1,6 @@
-Used Modules
+This was written in Anaconda using Spyder 
+
+Used Modules:
 
 Builtin:
 math,os
